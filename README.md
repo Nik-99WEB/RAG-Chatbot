@@ -10,6 +10,10 @@ This project implements a **Retrieval-Augmented Generation (RAG)** pipeline wher
 
 The chatbot is designed to reduce hallucinations by ensuring responses are backed by real, retrieved data.
 
+Functional UI Screenshot
+<img width="1680" height="957" alt="image" src="answer.png" />
+<img width="1680" height="957" alt="image" src="uploadoption.png" />
+
 ---
 
 ## ✨ Features
