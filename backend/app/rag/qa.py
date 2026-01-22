@@ -1,4 +1,3 @@
-# type: ignore
 import os
 from dotenv import load_dotenv
 from groq import Groq
@@ -10,14 +9,16 @@ load_dotenv()
 DB_PATH = "chroma_db"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+# 🚨 Hard fail early if key is missing
 if not GROQ_API_KEY:
-    raise RuntimeError("GROQ_API_KEY is not set in environment variables")
+    raise RuntimeError("GROQ_API_KEY is not set")
 
 client = Groq(api_key=GROQ_API_KEY)
 
 
 def ask_question(query: str) -> str:
-    if not os.path.exists(DB_PATH) or not os.listdir(DB_PATH):
+    # ✅ Prevent 502 when DB is missing
+    if not os.path.exists(DB_PATH):
         return "⚠️ No documents uploaded yet. Please upload a PDF first."
 
     embeddings = HuggingFaceEmbeddings(
@@ -32,7 +33,7 @@ def ask_question(query: str) -> str:
     docs = db.similarity_search(query, k=3)
 
     if not docs:
-        return "⚠️ No relevant context found in the uploaded documents."
+        return "⚠️ No relevant information found in the uploaded documents."
 
     context = "\n\n".join(doc.page_content for doc in docs)
 
