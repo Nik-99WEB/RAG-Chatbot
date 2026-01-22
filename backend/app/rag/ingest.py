@@ -4,8 +4,13 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 
-DATA_PATH = "data"
-DB_PATH = "chroma_db"
+# -------------------------------------------------
+# Absolute paths (IMPORTANT for Render deployment)
+# -------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+DATA_PATH = os.path.join(BASE_DIR, "data")
+DB_PATH = os.path.join(BASE_DIR, "chroma_db")
 
 
 def ingest_docs():
@@ -16,13 +21,13 @@ def ingest_docs():
     documents = []
 
     for filename in os.listdir(DATA_PATH):
-        path = os.path.join(DATA_PATH, filename)
+        file_path = os.path.join(DATA_PATH, filename)
 
-        if filename.endswith(".pdf"):
-            documents.extend(PyPDFLoader(path).load())
+        if filename.lower().endswith(".pdf"):
+            documents.extend(PyPDFLoader(file_path).load())
 
-        elif filename.endswith(".txt"):
-            documents.extend(TextLoader(path, encoding="utf-8").load())
+        elif filename.lower().endswith(".txt"):
+            documents.extend(TextLoader(file_path, encoding="utf-8").load())
 
     if not documents:
         print("⚠️ No documents found to ingest")
@@ -39,10 +44,12 @@ def ingest_docs():
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    Chroma.from_documents(
+    vectordb = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
         persist_directory=DB_PATH
     )
 
-    print("✅ Documents ingested successfully")
+    vectordb.persist()  # 🔥 CRITICAL LINE (fixes your issue)
+
+    print(f"✅ Successfully ingested {len(chunks)} chunks into ChromaDB")
