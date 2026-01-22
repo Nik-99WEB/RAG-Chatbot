@@ -1,23 +1,22 @@
 import os
+import tempfile
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 
 # -------------------------------------------------
-# Absolute paths (IMPORTANT for Render deployment)
+# Render-safe writable directories (/tmp)
 # -------------------------------------------------
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+DATA_PATH = os.path.join(tempfile.gettempdir(), "data")
+DB_PATH = os.path.join(tempfile.gettempdir(), "chroma_db")
 
-DATA_PATH = os.path.join(BASE_DIR, "data")
-DB_PATH = os.path.join(BASE_DIR, "chroma_db")
+# Ensure directories exist
+os.makedirs(DATA_PATH, exist_ok=True)
+os.makedirs(DB_PATH, exist_ok=True)
 
 
 def ingest_docs():
-    if not os.path.exists(DATA_PATH):
-        print("⚠️ No data folder found, skipping ingestion")
-        return
-
     documents = []
 
     for filename in os.listdir(DATA_PATH):
@@ -50,6 +49,6 @@ def ingest_docs():
         persist_directory=DB_PATH
     )
 
-    vectordb.persist()  # 🔥 CRITICAL LINE (fixes your issue)
+    vectordb.persist()
 
     print(f"✅ Successfully ingested {len(chunks)} chunks into ChromaDB")

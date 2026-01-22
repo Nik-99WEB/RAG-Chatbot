@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,7 +15,7 @@ app = FastAPI(title="RAG Chatbot API")
 # =====================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # OK for local dev
+    allow_origins=["*"],  # OK for demo & dev
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,7 +45,8 @@ def ask(req: QuestionRequest):
 # =====================
 # Upload & Ingest PDF
 # =====================
-UPLOAD_DIR = "data"
+# Render-safe writable directory
+UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "data")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.post("/upload")
@@ -54,7 +56,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     file_path = os.path.join(UPLOAD_DIR, file.filename)
 
-    # 🚫 Prevent duplicate uploads
+    # Prevent duplicate uploads
     if os.path.exists(file_path):
         return {
             "message": "PDF already exists, skipping upload",
@@ -64,11 +66,10 @@ async def upload_pdf(file: UploadFile = File(...)):
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Ingest only new PDF
+    # Ingest after upload
     ingest_docs()
 
     return {
         "message": "PDF uploaded and ingested successfully",
         "filename": file.filename
     }
-
