@@ -6,12 +6,12 @@ __pycache__/
 # Node
 node_modules/
 
-# Environment
+# Env files
 .env
 
-# RAG data
-data/
+# RAG / Vector DB
 chroma_db/
+data/
 
 # OS
 .DS_Store
