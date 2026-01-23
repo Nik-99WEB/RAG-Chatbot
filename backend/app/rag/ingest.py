@@ -5,15 +5,8 @@ from langchain_community.vectorstores import Chroma
 
 from app.core.hf_embeddings import get_hf_embeddings
 
-# -------------------------------------------------
-# Render-safe writable directories (/tmp)
-# -------------------------------------------------
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-DATA_PATH = os.path.join(BASE_DIR, "data")
-DB_PATH = os.path.join(BASE_DIR, "chroma_db")
+from app.core.paths import DB_PATH, UPLOAD_DIR
 
-os.makedirs(DATA_PATH, exist_ok=True)
-os.makedirs(DB_PATH, exist_ok=True)
 
 
 # -------------------------------------------------
@@ -33,8 +26,8 @@ class HFEmbeddingFunction:
 def ingest_docs():
     documents = []
 
-    for filename in os.listdir(DATA_PATH):
-        file_path = os.path.join(DATA_PATH, filename)
+    for filename in os.listdir(UPLOAD_DIR):
+        file_path = os.path.join(UPLOAD_DIR, filename)
 
         if filename.lower().endswith(".pdf"):
             documents.extend(PyPDFLoader(file_path).load())

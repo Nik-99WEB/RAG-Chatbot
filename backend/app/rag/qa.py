@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from groq import Groq
 from langchain_community.vectorstores import Chroma
-from app.rag.ingest import DB_PATH
+from app.core.paths import DB_PATH
 
 
 from app.core.hf_embeddings import get_hf_embeddings
