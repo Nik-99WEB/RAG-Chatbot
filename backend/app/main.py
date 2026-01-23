@@ -20,7 +20,7 @@ app.add_middleware(
         "http://localhost:5173",
         "https://rag-chatbot-zdo3.onrender.com"
     ],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

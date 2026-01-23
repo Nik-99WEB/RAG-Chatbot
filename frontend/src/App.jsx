@@ -73,11 +73,15 @@ function App() {
         }
       );
 
+    console.log("UPLOAD STATUS CODE:", res.status);  //error logging 
+    console.log("UPLOAD OK?:", res.ok);         // error logging      
+
       const data = await res.json();
+      console.log("UPLOAD RESPONSE BODY:", data);  // error logging
 
       if (data.message?.includes("already exists")) {
         setUploadStatus("PDF already exists ⚠️");
-        setUploadError(true);
+        setUploadError(false);
       } else if (res.ok) {
         setUploadStatus("PDF uploaded successfully ✅");
         setUploadError(false);
@@ -85,7 +89,8 @@ function App() {
         setUploadStatus("Failed to upload PDF ❌");
         setUploadError(true);
       }
-    } catch {
+    } catch(err) {
+      console.error("UPLOAD ERROR:", err);     //error logging
       setUploadStatus("Error uploading PDF ❌");
       setUploadError(true);
     }
