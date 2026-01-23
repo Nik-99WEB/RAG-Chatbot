@@ -1,7 +1,6 @@
 import os
 import shutil
 import tempfile
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,6 +13,8 @@ app = FastAPI(title="RAG Chatbot API")
 # =====================
 # CORS (for frontend)
 # =====================
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -47,6 +48,14 @@ def root():
 def ask(req: QuestionRequest):
     answer = ask_question(req.question)
     return {"answer": answer}
+
+# =====================
+# CORS Preflight for Upload
+@app.options("/upload")
+async def upload_options():
+    return {}
+
+
 
 # =====================
 # Upload & Ingest PDF
