@@ -8,6 +8,15 @@ from app.core.hf_embeddings import get_hf_embeddings
 from app.rag.paths import DATA_PATH, DB_PATH
 UPLOAD_DIR = DATA_PATH
 
+import shutil
+
+def reset_chroma_if_broken(db_path: str):
+    if os.path.exists(db_path):
+        # If directory exists but has no index files → broken
+        files = os.listdir(db_path)
+        if not files:
+            shutil.rmtree(db_path)
+
 
 
 # -------------------------------------------------
@@ -25,7 +34,9 @@ class HFEmbeddingFunction:
 # Ingest documents into ChromaDB
 # -------------------------------------------------
 def ingest_docs():
+    reset_chroma_if_broken(DB_PATH)
     documents = []
+
 
     for filename in os.listdir(UPLOAD_DIR):
         file_path = os.path.join(UPLOAD_DIR, filename)
