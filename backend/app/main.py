@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -15,11 +16,16 @@ app = FastAPI(title="RAG Chatbot API")
 # =====================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # OK for demo & dev
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:5173",
+        "https://rag-chatbot-zdo3.onrender.com"
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 
 # =====================
 # Models
