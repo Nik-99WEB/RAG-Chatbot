@@ -6,7 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.rag.qa import ask_question
-from app.rag.ingest import DATA_PATH, ingest_docs
+from app.rag.ingest import ingest_docs
+from app.rag.paths import DATA_PATH
+
 
 
 app = FastAPI(title="RAG Chatbot API")
@@ -14,7 +16,6 @@ app = FastAPI(title="RAG Chatbot API")
 # =====================
 # CORS (for frontend)
 # =====================
-from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,

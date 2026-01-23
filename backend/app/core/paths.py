@@ -1,3 +1,5 @@
+from app.rag.paths import DATA_PATH, DB_PATH
+
 import os
 
 BASE_DIR = os.path.dirname(

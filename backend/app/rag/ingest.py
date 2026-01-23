@@ -5,7 +5,8 @@ from langchain_community.vectorstores import Chroma
 
 from app.core.hf_embeddings import get_hf_embeddings
 
-from app.core.paths import DB_PATH, UPLOAD_DIR
+from app.rag.paths import DATA_PATH, DB_PATH
+UPLOAD_DIR = DATA_PATH
 
 
 
