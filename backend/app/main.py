@@ -72,34 +72,23 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
+    file_path = os.path.join(DATA_PATH, file.filename)
+
+    if os.path.exists(file_path):
+        return {"message": "PDF already exists", "filename": file.filename}
+
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+
+    return {
+        "message": "PDF uploaded successfully",
+        "filename": file.filename
+    }
+
+@app.post("/ingest")
+def ingest_endpoint():
     try:
-        print("📥 Upload started:", file.filename)
-
-        file_path = os.path.join(DATA_PATH, file.filename)
-
-        if os.path.exists(file_path):
-            print("⚠️ File already exists")
-            return {
-                "message": "PDF already exists, skipping upload",
-                "filename": file.filename
-            }
-
-        with open(file_path, "wb") as f:
-            content = await file.read()
-            f.write(content)
-
-        print("📄 File saved:", file_path)
-
-        ingest_docs()   # ← VERY IMPORTANT
-
-        print("✅ Ingestion complete")
-
-        return {
-            "message": "PDF uploaded and ingested successfully",
-            "filename": file.filename
-        }
-
+        ingest_docs()
+        return {"message": "Documents ingested successfully"}
     except Exception as e:
-        print("❌ UPLOAD ERROR")
-        traceback.print_exc()   # 👈 THIS IS THE KEY
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"error": str(e)}
