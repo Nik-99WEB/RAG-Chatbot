@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 from groq import Groq
 from langchain_community.vectorstores import Chroma
+from app.rag.ingest import DB_PATH
+
 
 from app.core.hf_embeddings import get_hf_embeddings
 
@@ -10,8 +12,6 @@ from app.core.hf_embeddings import get_hf_embeddings
 # -------------------------------------------------
 load_dotenv()
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "chroma_db")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 

@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.rag.qa import ask_question
-from app.rag.ingest import ingest_docs
+from app.rag.ingest import DATA_PATH, ingest_docs
+
 
 app = FastAPI(title="RAG Chatbot API")
 
@@ -66,25 +67,21 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith(".pdf"):
-        return {"error": "Only PDF files are allowed"}
+    file_path = os.path.join(DATA_PATH, file.filename)
 
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-
-    # Prevent duplicate uploads
     if os.path.exists(file_path):
         return {
             "message": "PDF already exists, skipping upload",
-            "filename": file.filename
+            "filename": file.filename,
         }
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
 
-    # Ingest after upload
+    # VERY IMPORTANT: ingest after saving
     ingest_docs()
 
     return {
         "message": "PDF uploaded and ingested successfully",
-        "filename": file.filename
+        "filename": file.filename,
     }
