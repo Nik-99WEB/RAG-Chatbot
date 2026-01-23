@@ -1,9 +1,11 @@
 import os
 import tempfile
+
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
+
+from app.core.hf_embeddings import get_hf_embeddings
 
 # -------------------------------------------------
 # Render-safe writable directories (/tmp)
@@ -11,11 +13,24 @@ from langchain_community.vectorstores import Chroma
 DATA_PATH = os.path.join(tempfile.gettempdir(), "data")
 DB_PATH = os.path.join(tempfile.gettempdir(), "chroma_db")
 
-# Ensure directories exist
 os.makedirs(DATA_PATH, exist_ok=True)
 os.makedirs(DB_PATH, exist_ok=True)
 
 
+# -------------------------------------------------
+# Hugging Face ONLINE embedding wrapper for Chroma
+# -------------------------------------------------
+class HFEmbeddingFunction:
+    def embed_documents(self, texts):
+        return get_hf_embeddings(texts).tolist()
+
+    def embed_query(self, text):
+        return get_hf_embeddings([text])[0].tolist()
+
+
+# -------------------------------------------------
+# Ingest documents into ChromaDB
+# -------------------------------------------------
 def ingest_docs():
     documents = []
 
@@ -39,13 +54,9 @@ def ingest_docs():
 
     chunks = splitter.split_documents(documents)
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
-
     vectordb = Chroma.from_documents(
         documents=chunks,
-        embedding=embeddings,
+        embedding=HFEmbeddingFunction(),
         persist_directory=DB_PATH
     )
 

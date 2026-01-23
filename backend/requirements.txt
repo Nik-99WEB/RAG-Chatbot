@@ -8,8 +8,8 @@ langchain-community
 langchain-text-splitters
 
 chromadb
-sentence-transformers
-huggingface-hub
-
 groq
 pypdf
+
+requests
+numpy

@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 from groq import Groq
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+
+from app.core.hf_embeddings import get_hf_embeddings
 
 # -------------------------------------------------
 # ENV + PATH SETUP
@@ -21,18 +22,28 @@ if not GROQ_API_KEY:
 client = Groq(api_key=GROQ_API_KEY)
 
 
+# -------------------------------------------------
+# Hugging Face ONLINE embedding wrapper for Chroma
+# -------------------------------------------------
+class HFEmbeddingFunction:
+    def embed_documents(self, texts):
+        return get_hf_embeddings(texts).tolist()
+
+    def embed_query(self, text):
+        return get_hf_embeddings([text])[0].tolist()
+
+
+# -------------------------------------------------
+# Ask question from RAG
+# -------------------------------------------------
 def ask_question(query: str) -> str:
     # Guard: no DB yet
     if not os.path.exists(DB_PATH):
         return "⚠️ No documents uploaded yet. Please upload a PDF first."
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
-
     db = Chroma(
         persist_directory=DB_PATH,
-        embedding_function=embeddings
+        embedding_function=HFEmbeddingFunction()
     )
 
     docs = db.similarity_search(query, k=3)
