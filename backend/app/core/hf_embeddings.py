@@ -1,27 +1,13 @@
-import os
-import requests
-import numpy as np
+from sentence_transformers import SentenceTransformer
 
-HF_API_URL = (
-    "https://api-inference.huggingface.co/"
-    "pipeline/feature-extraction/"
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
+_model = None
 
-HF_API_TOKEN = os.getenv("HF_API_TOKEN")
+def get_model():
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _model
 
-headers = {
-    "Authorization": f"Bearer {HF_API_TOKEN}"
-}
-
-
-def get_hf_embeddings(texts: list[str]) -> np.ndarray:
-    response = requests.post(
-        HF_API_URL,
-        headers=headers,
-        json={"inputs": texts}
-    )
-    response.raise_for_status()
-
-    data = response.json()
-    return np.mean(np.array(data), axis=1)
+def get_hf_embeddings(texts):
+    model = get_model()
+    return model.encode(texts, normalize_embeddings=True)
