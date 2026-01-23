@@ -1,13 +1,6 @@
 from sentence_transformers import SentenceTransformer
 
-_model = None
-
-def get_model():
-    global _model
-    if _model is None:
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
-    return _model
+_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def get_hf_embeddings(texts):
-    model = get_model()
-    return model.encode(texts, normalize_embeddings=True)
+    return _model.encode(texts, show_progress_bar=False)
