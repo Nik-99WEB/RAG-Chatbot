@@ -10,5 +10,8 @@ langchain-text-splitters
 chromadb
 sentence-transformers
 
+psycopg2-binary
+
+
 groq
 pypdf

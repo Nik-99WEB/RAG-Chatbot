@@ -1,45 +1,24 @@
 import os
+import psycopg2
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
 
 from app.core.hf_embeddings import get_hf_embeddings
+from app.rag.paths import DATA_PATH
 
-from app.rag.paths import DATA_PATH, DB_PATH
-UPLOAD_DIR = DATA_PATH
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-import shutil
-
-def reset_chroma_if_broken(db_path: str):
-    if os.path.exists(db_path):
-        # If directory exists but has no index files → broken
-        files = os.listdir(db_path)
-        if not files:
-            shutil.rmtree(db_path)
-
-
-
-# -------------------------------------------------
-# Hugging Face ONLINE embedding wrapper for Chroma
-# -------------------------------------------------
-class HFEmbeddingFunction:
-    def embed_documents(self, texts):
-        return get_hf_embeddings(texts).tolist()
-
-    def embed_query(self, text):
-        return get_hf_embeddings([text])[0].tolist()
-
-
-# -------------------------------------------------
-# Ingest documents into ChromaDB
-# -------------------------------------------------
 def ingest_docs():
-    reset_chroma_if_broken(DB_PATH)
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL not set")
+
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+
     documents = []
 
-
-    for filename in os.listdir(UPLOAD_DIR):
-        file_path = os.path.join(UPLOAD_DIR, filename)
+    for filename in os.listdir(DATA_PATH):
+        file_path = os.path.join(DATA_PATH, filename)
 
         if filename.lower().endswith(".pdf"):
             documents.extend(PyPDFLoader(file_path).load())
@@ -48,7 +27,7 @@ def ingest_docs():
             documents.extend(TextLoader(file_path, encoding="utf-8").load())
 
     if not documents:
-        print("⚠️ No documents found to ingest")
+        print("⚠️ No documents found")
         return
 
     splitter = RecursiveCharacterTextSplitter(
@@ -58,12 +37,32 @@ def ingest_docs():
 
     chunks = splitter.split_documents(documents)
 
-    vectordb = Chroma.from_documents(
-        documents=chunks,
-        embedding=HFEmbeddingFunction(),
-        persist_directory=DB_PATH
+    # insert document record once
+    cur.execute(
+        "INSERT INTO documents (filename) VALUES (%s) ON CONFLICT DO NOTHING RETURNING id",
+        (filename,)
     )
+    doc_id = cur.fetchone()
+    if not doc_id:
+        cur.execute("SELECT id FROM documents WHERE filename=%s", (filename,))
+        doc_id = cur.fetchone()
 
-    vectordb.persist()
+    doc_id = doc_id[0]
 
-    print(f"✅ Successfully ingested {len(chunks)} chunks into ChromaDB")
+    texts = [c.page_content for c in chunks]
+    embeddings = get_hf_embeddings(texts)
+
+    for text, emb in zip(texts, embeddings):
+        cur.execute(
+            """
+            INSERT INTO document_chunks (document_id, content, embedding)
+            VALUES (%s, %s, %s)
+            """,
+            (doc_id, text, emb.tolist())
+        )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    print(f"✅ Ingested {len(chunks)} chunks into Supabase pgvector")

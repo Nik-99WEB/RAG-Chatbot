@@ -1,59 +1,55 @@
 import os
+import psycopg2
 from dotenv import load_dotenv
 from groq import Groq
-from langchain_community.vectorstores import Chroma
-from app.rag.paths import DB_PATH
-
-
-
 
 from app.core.hf_embeddings import get_hf_embeddings
 
 # -------------------------------------------------
-# ENV + PATH SETUP
+# ENV SETUP
 # -------------------------------------------------
 load_dotenv()
 
-
+DATABASE_URL = os.getenv("DATABASE_URL")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# Hard fail early if key is missing
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set")
+
 if not GROQ_API_KEY:
     raise RuntimeError("GROQ_API_KEY is not set")
 
 client = Groq(api_key=GROQ_API_KEY)
 
-
 # -------------------------------------------------
-# Hugging Face ONLINE embedding wrapper for Chroma
-# -------------------------------------------------
-class HFEmbeddingFunction:
-    def embed_documents(self, texts):
-        return get_hf_embeddings(texts).tolist()
-
-    def embed_query(self, text):
-        return get_hf_embeddings([text])[0].tolist()
-
-
-# -------------------------------------------------
-# Ask question from RAG
+# Ask question using pgvector similarity search
 # -------------------------------------------------
 def ask_question(query: str) -> str:
-    # Guard: no DB yet
-    if not os.path.exists(DB_PATH):
-        return "⚠️ No documents uploaded yet. Please upload a PDF first."
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
 
-    db = Chroma(
-        persist_directory=DB_PATH,
-        embedding_function=HFEmbeddingFunction()
+    # Embed the query
+    query_embedding = get_hf_embeddings([query])[0].tolist()
+
+    # Vector similarity search (cosine distance)
+    cur.execute(
+        """
+        SELECT content
+        FROM document_chunks
+        ORDER BY embedding <=> %s
+        LIMIT 3;
+        """,
+        (query_embedding,)
     )
 
-    docs = db.similarity_search(query, k=3)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
 
-    if not docs:
+    if not rows:
         return "⚠️ No relevant information found in the uploaded documents."
 
-    context = "\n\n".join(doc.page_content for doc in docs)
+    context = "\n\n".join(row[0] for row in rows)
 
     prompt = f"""
 You are a helpful assistant.
